@@ -1,0 +1,261 @@
+# Load libraries
+library(shiny)
+library(shinydashboard)
+library(bslib)        # Theming support
+library(childsds)     # CDC growth percentiles
+
+# Define UI for application
+ui <- dashboardPage(
+  dashboardHeader(title = "Medical Calculator Suite"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Body Metrics", tabName = "body_metrics", icon = icon("dumbbell")),
+      menuItem("Fluid Management", tabName = "fluids", icon = icon("tint")),
+      menuItem("Lab Calculators", tabName = "labs", icon = icon("flask")),
+      menuItem("Renal", tabName = "renal", icon = icon("medkit")),
+      menuItem("Growth Charts", tabName = "growth", icon = icon("chart-line")),
+      menuItem("Cardio", tabName = "cardio", icon = icon("heartbeat")),
+      menuItem("Dosing", tabName = "dosing", icon = icon("capsules"))
+    )
+  ),
+  dashboardBody(
+    theme = bs_theme(version = 4, bootswatch = "flatly"),
+    tabItems(
+      # Body Metrics
+      tabItem("body_metrics",
+              tabsetPanel(
+                tabPanel("BMI",
+                         numericInput("bmi_weight","Weight (kg)",70),
+                         numericInput("bmi_height","Height (cm)",170),
+                         actionButton("bmi_calc","Calc BMI"),
+                         verbatimTextOutput("bmi_result")
+                ),
+                tabPanel("BSA",
+                         numericInput("bsa_weight","Weight (kg)",70),
+                         numericInput("bsa_height","Height (cm)",170),
+                         actionButton("bsa_calc","Calc BSA"),
+                         verbatimTextOutput("bsa_result")
+                )
+              )
+      ),
+      # Fluid Management
+      tabItem("fluids",
+              tabsetPanel(
+                tabPanel("Burn Resuscitation",
+                         numericInput("burn_weight","Weight (kg)",70),
+                         numericInput("burn_tbsa","% TBSA Burn",20),
+                         numericInput("burn_time","Hours since injury",4),
+                         actionButton("burn_calc","Calc Fluids"),
+                         verbatimTextOutput("burn_result")
+                )
+              )
+      ),
+      # Lab Calculators
+      tabItem("labs",
+              tabsetPanel(
+                tabPanel("Anion Gap",
+                         numericInput("ag_na","Na+ (mmol/L)",140),
+                         numericInput("ag_cl","Cl- (mmol/L)",104),
+                         numericInput("ag_hco3","HCO3- (mmol/L)",24),
+                         checkboxInput("ag_with_k","Include K+?",FALSE),
+                         conditionalPanel("input.ag_with_k",numericInput("ag_k","K+ (mmol/L)",4)),
+                         actionButton("ag_calc","Calc AG"),
+                         verbatimTextOutput("ag_result")
+                ),
+                tabPanel("A-a Gradient",
+                         numericInput("aa_pao2","PaO2 (mmHg)",95),
+                         numericInput("aa_paco2","PaCO2 (mmHg)",40),
+                         numericInput("aa_fio2","FiO2",0.21),
+                         actionButton("aa_calc","Calc A-a Grad"),
+                         verbatimTextOutput("aa_result")
+                ),
+                tabPanel("a/A Ratio",
+                         numericInput("aar_pao2","PaO2 (mmHg)",95),
+                         numericInput("aar_paco2","PaCO2 (mmHg)",40),
+                         numericInput("aar_fio2","FiO2",0.21),
+                         actionButton("aar_calc","Calc a/A Ratio"),
+                         verbatimTextOutput("aar_result")
+                ),
+                tabPanel("Corrected Calcium",
+                         numericInput("ca_meas","Measured Ca (mmol/L)",2.2),
+                         numericInput("ca_alb","Albumin (g/L)",35),
+                         actionButton("ca_calc","Calc Corr Ca"),
+                         verbatimTextOutput("ca_result")
+                ),
+                tabPanel("CrCl Sanaka",
+                         numericInput("sanaka_age","Age (yrs)",70),
+                         numericInput("sanaka_weight","Weight (kg)",70),
+                         numericInput("sanaka_scr","SCr (µmol/L)",100),
+                         actionButton("sanaka_calc","Calc CrCl Sanaka"),
+                         verbatimTextOutput("sanaka_result")
+                ),
+                tabPanel("Serum Osmolality",
+                         numericInput("osm_na","Na+ (mmol/L)",140),
+                         numericInput("osm_glu","Glucose (mg/dL)",100),
+                         numericInput("osm_bun","BUN (mg/dL)",14),
+                         actionButton("osm_calc","Calc Osmolality"),
+                         verbatimTextOutput("osm_result")
+                ),
+                tabPanel("Corrected Sodium",
+                         numericInput("nacl_na","Na+ (mmol/L)",140),
+                         numericInput("nacl_glu","Glucose (mg/dL)",200),
+                         actionButton("nacl_calc","Calc Corr Na"),
+                         verbatimTextOutput("nacl_result")
+                )
+              )
+      ),
+      # Renal
+      tabItem("renal",
+              tabsetPanel(
+                tabPanel("CrCl CG",
+                         numericInput("cg_age","Age (yrs)",40),
+                         numericInput("cg_weight","Weight (kg)",70),
+                         numericInput("cg_scr","SCr (µmol/L)",88),
+                         selectInput("cg_sex","Sex",c("Male","Female")),
+                         actionButton("cg_calc","Calc CrCl CG"),
+                         verbatimTextOutput("cg_result")
+                ),
+                tabPanel("Jelliffe CrCl",
+                         numericInput("jel_age","Age (yrs)",60),
+                         numericInput("jel_weight","Weight (kg)",70),
+                         numericInput("jel_scr","SCr (mg/dL)",1),
+                         checkboxInput("jel_female","Female?",FALSE),
+                         actionButton("jel_calc","Calc Jelliffe CrCl"),
+                         verbatimTextOutput("jel_result")
+                ),
+                tabPanel("Urea Reduction Ratio",
+                         numericInput("urr_predialysis","Pre-dialysis Urea (mg/dL)",60),
+                         numericInput("urr_postdialysis","Post-dialysis Urea (mg/dL)",20),
+                         actionButton("urr_calc","Calc URR"),
+                         verbatimTextOutput("urr_result")
+                ),
+                tabPanel("eGFR CKD-EPI",
+                         numericInput("egfr_scr","SCr (mg/dL)",1),
+                         numericInput("egfr_age","Age (yrs)",40),
+                         selectInput("egfr_sex","Sex",c("Male","Female")),
+                         actionButton("egfr_calc","Calc eGFR"),
+                         verbatimTextOutput("egfr_result")
+                )
+              )
+      ),
+      # Growth Charts
+      tabItem("growth",
+              tabsetPanel(
+                tabPanel("Height-for-Age 2-20y",
+                         selectInput("gh_sex","Sex",c("Female","Male")),
+                         numericInput("gh_age","Age (yrs)",5),
+                         numericInput("gh_ht","Height (cm)",110),
+                         actionButton("gh_calc","Calc Percentile"),
+                         verbatimTextOutput("gh_result")
+                ),
+                tabPanel("Weight-for-Age 2-20y",
+                         selectInput("wfa_sex","Sex",c("Female","Male")),
+                         numericInput("wfa_age","Age (yrs)",5),
+                         numericInput("wfa_wt","Weight (kg)",20),
+                         actionButton("wfa_calc","Calc WFA Percentile"),
+                         verbatimTextOutput("wfa_result")
+                )
+              )
+      ),
+      # Cardio
+      tabItem("cardio",
+              tabsetPanel(
+                tabPanel("NT-proBNP Risk",
+                         numericInput("np_age","Age",65),
+                         numericInput("np_bp","SBP",120),
+                         numericInput("np_rr","RR",16),
+                         numericInput("np_creat","SCr",100),
+                         numericInput("np_bnp","NT-proBNP",500),
+                         actionButton("np_calc","Calc Risk"),
+                         verbatimTextOutput("np_result")
+                ),
+                tabPanel("MAP",
+                         numericInput("map_sbp","SBP (mmHg)",120),
+                         numericInput("map_dbp","DBP (mmHg)",80),
+                         actionButton("map_calc","Calc MAP"),
+                         verbatimTextOutput("map_result")
+                ),
+                tabPanel("Shock Index",
+                         numericInput("si_hr","HR (bpm)",80),
+                         numericInput("si_sbp","SBP (mmHg)",120),
+                         actionButton("si_calc","Calc SI"),
+                         verbatimTextOutput("si_result")
+                )
+              )
+      ),
+      # Dosing
+      tabItem("dosing",
+              tabsetPanel(
+                tabPanel("BSA Dosing",
+                         numericInput("dose_m2","Dose (mg/m²)",100),
+                         numericInput("dose_bsa","BSA (m²)",1.73),
+                         actionButton("dose_calc","Calc Dose"),
+                         verbatimTextOutput("dose_result")
+                ),
+                tabPanel("Weight-Based Dosing",
+                         numericInput("wbd_weight","Weight (kg)",70),
+                         numericInput("wbd_mgkg","Dose (mg/kg)",2),
+                         actionButton("wbd_calc","Calc Dose"),
+                         verbatimTextOutput("wbd_result")
+                )
+              )
+      )
+    )
+  )
+)
+
+# Server logic
+server <- function(input, output) {
+  # BMI
+  # BMI
+  observeEvent(input$bmi_calc, {
+    result <- round(input$bmi_weight / ((input$bmi_height/100)^2), 1)
+    output$bmi_result <- renderText(result)
+  })
+  # BSA
+  observeEvent(input$bsa_calc, {
+    result <- round(sqrt((input$bsa_height * input$bsa_weight) / 3600), 2)
+    output$bsa_result <- renderText(result)
+  })
+  # Burn Resuscitation
+  observeEvent(input$burn_calc, { total <- 2 * input$burn_weight * input$burn_tbsa; half <- total/2; given <- if(input$burn_time <=8) half*(input$burn_time/8) else if(input$burn_time <=24) half + half*((input$burn_time -8)/16) else total; output$burn_result <- renderText(paste0("Total: ", round(total), " mL\nGiven: ", round(given), " mL"))})
+  # Anion Gap
+  observeEvent(input$ag_calc, {ag <- if(input$ag_with_k) input$ag_na + input$ag_k - (input$ag_cl + input$ag_hco3) else input$ag_na - (input$ag_cl + input$ag_hco3); output$ag_result <- renderText(round(ag,1))})
+  # A-a Gradient
+  observeEvent(input$aa_calc, {pao2 <- (760 -47)*input$aa_fio2 - input$aa_paco2/0.8; output$aa_result <- renderText(round(pao2 - input$aa_pao2,1))})
+  # a/A Ratio
+  observeEvent(input$aar_calc, {pao2 <- (760 -47)*input$aar_fio2 - input$aar_paco2/0.8; output$aar_result <- renderText(round(input$aar_pao2 / pao2,3))})
+  # Corrected Calcium
+  observeEvent(input$ca_calc, {output$ca_result <- renderText(round(input$ca_meas + 0.02*(40 - input$ca_alb),2))})
+  # CrCl Sanaka
+  observeEvent(input$sanaka_calc, {output$sanaka_result <- renderText(round(0.047 * ((140 - input$sanaka_age) * input$sanaka_weight) / input$sanaka_scr,1))})
+  # Serum Osmolality
+  observeEvent(input$osm_calc, {osm <- 2*input$osm_na + input$osm_glu/18 + input$osm_bun/2.8; output$osm_result <- renderText(round(osm,1))})
+  # Corrected Sodium
+  observeEvent(input$nacl_calc, {output$nacl_result <- renderText(round(input$nacl_na + 0.024*(input$nacl_glu -100),2))})
+  # Cockcroft-Gault
+  observeEvent(input$cg_calc, {base <- (140-input$cg_age)*input$cg_weight/(0.814*input$cg_scr); result <- if(input$cg_sex=="Female") 0.85*base else base; output$cg_result <- renderText(round(result,1))})
+  # Jelliffe CrCl
+  observeEvent(input$jel_calc, {base <- (98 - 0.8*(input$jel_age-20)) * input$jel_weight / input$jel_scr; result <- if(input$jel_female) 0.9*base else base; output$jel_result <- renderText(round(result,1))})
+  # URR
+  observeEvent(input$urr_calc, {urr <- (input$urr_predialysis - input$urr_postdialysis) / input$urr_predialysis * 100; output$urr_result <- renderText(paste0(round(urr,1), "%"))})
+  # eGFR CKD-EPI
+  observeEvent(input$egfr_calc, {k <- if(input$egfr_sex=="Female") 0.7 else 0.9; a <- if(input$egfr_sex=="Female") -0.241 else -0.302; minv <- min(input$egfr_scr/k,1); maxv <- max(input$egfr_scr/k,1); egfr <- 142 * (minv^a) * (maxv^-1.2) * (0.9938^input$egfr_age) * (ifelse(input$egfr_sex=="Female",1.012,1)); output$egfr_result <- renderText(round(egfr,1))})
+  # Height-for-Age Percentile
+  observeEvent(input$gh_calc, {df <- who_htage2(sex=tolower(substr(input$gh_sex,1,1)), age=input$gh_age*12); perc <- approx(df$LMS$x, df$LMS$p, xout=input$gh_ht)$y; output$gh_result <- renderText(paste0(round(perc,1),"th percentile"))})
+  # Weight-for-Age Percentile
+  observeEvent(input$wfa_calc, {df <- who_wtage2(sex=tolower(substr(input$wfa_sex,1,1)), age=input$wfa_age*12); perc <- approx(df$LMS$x, df$LMS$p, xout=input$wfa_wt)$y; output$wfa_result <- renderText(paste0(round(perc,1),"th percentile"))})
+  # NT-proBNP Risk
+  observeEvent(input$np_calc, {lp <- -7.34 + 0.82*log(input$np_bnp) + 0.03*input$np_age -0.01*input$np_bp +0.1*input$np_rr +0.005*input$np_creat; prob <- exp(lp)/(1+exp(lp))*100; output$np_result <- renderText(paste0(round(prob,1), "%"))})
+  # MAP
+  observeEvent(input$map_calc, {map <- (input$map_sbp + 2*input$map_dbp)/3; output$map_result <- renderText(round(map,1))})
+  # Shock Index
+  observeEvent(input$si_calc, {output$si_result <- renderText(round(input$si_hr / input$si_sbp,2))})
+  # BSA Dosing
+  observeEvent(input$dose_calc, {output$dose_result <- renderText(round(input$dose_m2 * input$dose_bsa,1))})
+  # Weight-Based Dosing
+  observeEvent(input$wbd_calc, {output$wbd_result <- renderText(round(input$wbd_weight * input$wbd_mgkg,1))})
+}
+
+# Run the application
+shinyApp(ui, server)
