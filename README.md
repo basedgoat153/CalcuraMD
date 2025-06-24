@@ -5,7 +5,7 @@ CalcuraMD is a comprehensive web-based medical calculator app built using R and 
 
 🌐 Live App
 
-Access the app here: https://tezzdm-swastik-pandita.shinyapps.io/CalcuraMD
+Access the app here: https://tezzdm-swastik-pandita.shinyapps.io/CalcuraMD_Fresh/
 
 🔬 Features
 
